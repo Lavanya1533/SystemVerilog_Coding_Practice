@@ -16,7 +16,7 @@ module counter( input logic [4:0] data,
       if (load)
         count <= data;
       else if (enable)
-        count <= count + 1;
+        count += 1;
       else
         count <= count;
     end : counter_blk
