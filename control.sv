@@ -34,15 +34,15 @@ state_t ps, ns;
 //Present state logic of Mealy machine
 always_ff @(posedge clk or negedge rst_)
   if (!rst_)
-    ps <= state_t '(3'b000);
+    ps <= INST_ADDER;
   else
-     ps <= ns;
+     ps <= ps.next();
 
   //Next state logic of Mealy machine
 
   always_comb begin
     unique case (ps)
-      3'b000    : begin
+      INST_ADDER: begin
                     ns      = state_t '(3'b001);
                     mem_rd  = 1'b0;
                     load_ir = 1'b0;
