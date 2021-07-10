@@ -41,33 +41,35 @@ initial
 
     for (int i = 0; i< 32; i++)
        // Write zero data to every address location
-	   write_mem(
+	   write_mem(i, 0, debug);
 
     for (int i = 0; i<32; i++)
       begin 
        // Read every address location
-
+		read_mem(i, rdata, debug);
        // check each memory location for data = 'h00
-
+		error_status = checkit (i, rdata, 8'h00);
       end
 
    // print results of test
-
+	printstatus(error_status);
+	
     $display("Data = Address Test");
 
     for (int i = 0; i< 32; i++)
        // Write data = address to every address location
+	   write_mem (i, i, debug);
        
     for (int i = 0; i<32; i++)
       begin
        // Read every address location
-
+		read_mem (i, rdata, debug);
        // check each memory location for data = address
-
+		error_status = checkit(i, rdata, i);
       end
 
    // print results of test
-
+	printstatus(error_status);
     $finish;
   end
 
@@ -75,17 +77,19 @@ initial
 
 	task write_mem ( 	input [4:0] waddr,
 						input [7:0] wdata,
-						input bit debug = 1'b0,
-						output read, write,
-						output [4:0] addr,
-						output [7:0] data_in);
-						
-			data_in <= wdata;
+						input bit debug = 1'b0);	
+			@(negedge clk);
 			addr 	<= waddr;
+			data_in <= wdata;
+			write 	<= 1'b1;
 			read	<= 1'b0;
+			
+			@(negedge clk);
+			write	<= 1'b0;
+			
+			@(negedge clk);
 			write	<= 1'b1;
-		#10 write	<= 1'b0;
-		#10	write	<= 1'b1;
+			
 		if (debug == 1)
 			$display("Write address is %h, data value is %h", waddr, wdata);
 	endtask : write_mem
@@ -93,23 +97,44 @@ initial
 // Read memory task
 	
 	task read_mem (		input [4:0] raddr,
-						input [7:0] data_out,
-						input bit debug = 1'b0,
-						output read, write,
 						output [7:0] rdata,
-						output [4:0] addr);
+						input bit debug = 1'b0);
 			
-				addr	= raddr;
-				read 	= 1'b1;
-				write 	= 1'b0;
-			#1	rdata	= data_out;
-			#10 read 	= 1'b0;
-			#10	read 	= 1'b1;
-			#1	rdata	= data_out;	
+			@(negedge clk);
+			addr 	<= raddr;
+			read 	<= 1'b1;
+			write 	<= 1'b0;
+			
+			@(negedge clk);
+			read	<= 1'b0;
+			rdata	= data_out;
+			
+			@(negedge clk);
+			read	<= 1'b1;
+			
 			if (debug == 1)
 			$display("Read address is %h, data value is %h", raddr, rdata);
 	endtask	: read_mem		
-// add result print function
 	
+// add result print function
+	function int checkit ( 	input [4:0] address,
+							input [7:0] actual, expected);
+		static int error_status;
+		
+		if(actual !== expected)
+		begin	
+			$display("Error No: %h, Expected : %h, Actual : %h", error_status, expected, actual);
+			error_status++;
+		end
+		return (error_status);
+	endfunction: checkit
+	
+// Void function to print status of the test
 
+	function void printstatus (input int status);
+		if (status == 0)
+			$display("Test pass - No error !");
+		else
+			$display("Test fails with error : %d", status);
+	endfunction: printstatus
 endmodule
